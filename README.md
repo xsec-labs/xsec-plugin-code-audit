@@ -12,7 +12,7 @@ result as structured, validated records.
   exports. It contains both upstream validators ported to Go with the same messages; `testdata/golden/` holds ~4,300
   cases recorded from the upstream Node validators, which the Go tests must reproduce exactly.
 - **Source only**: v1 reads the target's source text and never builds, tests or runs it.
-- **Panel** (`com.xsec.desktop/frontend`, source in `frontend-src/`): arrives in M2/M3; the file here is a placeholder.
+- **Panel** (`com.xsec.desktop/frontend/index.js`, generated from `frontend-src/`): a single-file WebView (Preact, host `--xsec-*` theme variables only) for the workspace tool (进度, 发现, 覆盖面, 报告, 新建审计, finding detail) and the settings page. It reads the sidecar through the `xsec.code-audit.*` frontend methods; an audit is started by putting a request into the conversation, never by a tool call from the panel.
 
 Docs: [`docs/tool-contract.md`](docs/tool-contract.md) (sidecar tools), [`docs/m0-verification.md`](docs/m0-verification.md)
 (real-device findings that shaped the design).
@@ -24,7 +24,14 @@ cd sidecar && CGO_ENABLED=0 go vet ./... && go test ./...      # also GOOS=windo
 scripts/build-sidecar.sh [GOOS GOARCH]                          # dist/<os>-<arch>/code-audit-mcp
 scripts/sync-upstream-skill.sh check                            # vendored skill still matches UPSTREAM.json
 node scripts/gen-golden.cjs skills/security-audit               # re-record the golden corpus (needs Node 22)
+
+pnpm install --frozen-lockfile && pnpm verify                   # panel: typecheck, build index.js, unit tests
+NODE_PATH=$(npm root -g) node tests/harness/shoot.cjs com.xsec.desktop/frontend/index.js tests/harness/panel.fixture.cjs out panel
 ```
+
+`com.xsec.desktop/frontend/index.js` is committed and CI fails if `pnpm build` changes it. `tests/harness/` replays fake sidecar
+data (`data.cjs`) through Desktop's plugin page protocol in headless Chromium, in light and dark, at the 620 px side
+width and at full width (fixtures: panel, running, wide, empty, settings, observe).
 
 Run the sidecar by hand: `PLUGIN_DATA=$(mktemp -d) sidecar/dist/.../code-audit-mcp`, then send newline-delimited
 JSON-RPC (`initialize`, `tools/list`, `tools/call`) on stdin.
