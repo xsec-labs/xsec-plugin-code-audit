@@ -148,6 +148,26 @@
           "xsec.workspace.panel.maximize": {
             "capability": "workspace.panel.maximize",
             "binding": "context"
+          },
+          "xsec.code-audit.preview": {
+            "capability": "workspace.project.read",
+            "binding": "context"
+          },
+          "xsec.code-audit.start": {
+            "capability": "workspace.project.write",
+            "binding": "context"
+          },
+          "xsec.code-audit.list": {
+            "capability": "workspace.project.read",
+            "binding": "context"
+          },
+          "xsec.code-audit.get": {
+            "capability": "workspace.project.read",
+            "binding": "context"
+          },
+          "xsec.code-audit.control": {
+            "capability": "workspace.project.write",
+            "binding": "context"
           }
         }
       },
@@ -308,6 +328,130 @@
               "parent",
               "sub"
             ]
+          },
+          "pass-start": {
+            "mcpServer": "code-audit",
+            "mcpTool": "code_audit_pass_start",
+            "workspaceToolId": "code-audit",
+            "permission": "pluginData.write"
+          },
+          "candidate-put": {
+            "mcpServer": "code-audit",
+            "mcpTool": "code_audit_candidate_put",
+            "workspaceToolId": "code-audit",
+            "permission": "pluginData.write"
+          },
+          "coverage-put": {
+            "mcpServer": "code-audit",
+            "mcpTool": "code_audit_coverage_put",
+            "workspaceToolId": "code-audit",
+            "permission": "pluginData.write"
+          },
+          "pass-finish": {
+            "mcpServer": "code-audit",
+            "mcpTool": "code_audit_pass_finish",
+            "workspaceToolId": "code-audit",
+            "permission": "pluginData.write"
+          },
+          "pass-status": {
+            "mcpServer": "code-audit",
+            "mcpTool": "code_audit_pass_status",
+            "workspaceToolId": "code-audit",
+            "permission": "workspace.project.read",
+            "roles": [
+              "parent",
+              "sub"
+            ]
+          },
+          "verify-next": {
+            "mcpServer": "code-audit",
+            "mcpTool": "code_audit_verify_next",
+            "workspaceToolId": "code-audit",
+            "permission": "pluginData.write"
+          },
+          "verify-put": {
+            "mcpServer": "code-audit",
+            "mcpTool": "code_audit_verify_put",
+            "workspaceToolId": "code-audit",
+            "permission": "pluginData.write"
+          },
+          "verify-finish": {
+            "mcpServer": "code-audit",
+            "mcpTool": "code_audit_verify_finish",
+            "workspaceToolId": "code-audit",
+            "permission": "pluginData.write"
+          },
+          "candidate-peek": {
+            "mcpServer": "code-audit",
+            "mcpTool": "code_audit_candidate_peek",
+            "workspaceToolId": "code-audit",
+            "permission": "workspace.project.read",
+            "roles": [
+              "parent",
+              "sub"
+            ]
+          },
+          "audit-list": {
+            "mcpServer": "code-audit",
+            "mcpTool": "code_audit_audit_list",
+            "workspaceToolId": "code-audit",
+            "permission": "workspace.project.read",
+            "roles": [
+              "parent",
+              "sub"
+            ]
+          },
+          "audit-get": {
+            "mcpServer": "code-audit",
+            "mcpTool": "code_audit_audit_get",
+            "workspaceToolId": "code-audit",
+            "permission": "workspace.project.read",
+            "roles": [
+              "parent",
+              "sub"
+            ]
+          },
+          "vuln-list": {
+            "mcpServer": "code-audit",
+            "mcpTool": "code_audit_vuln_list",
+            "workspaceToolId": "code-audit",
+            "permission": "workspace.project.read",
+            "roles": [
+              "parent",
+              "sub"
+            ]
+          },
+          "vuln-get": {
+            "mcpServer": "code-audit",
+            "mcpTool": "code_audit_vuln_get",
+            "workspaceToolId": "code-audit",
+            "permission": "workspace.project.read",
+            "roles": [
+              "parent",
+              "sub"
+            ]
+          },
+          "evidence-pack": {
+            "mcpServer": "code-audit",
+            "mcpTool": "code_audit_evidence_pack",
+            "workspaceToolId": "code-audit",
+            "permission": "workspace.project.read",
+            "roles": [
+              "parent",
+              "sub"
+            ]
+          },
+          "publish-next": {
+            "mcpServer": "code-audit",
+            "mcpTool": "code_audit_publish_next",
+            "workspaceToolId": "code-audit",
+            "permission": "pluginData.write"
+          },
+          "publish-ack": {
+            "mcpServer": "code-audit",
+            "mcpTool": "code_audit_publish_ack",
+            "workspaceToolId": "code-audit",
+            "permission": "pluginData.write"
           }
         }
       }
