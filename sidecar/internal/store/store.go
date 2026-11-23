@@ -10,6 +10,7 @@ package store
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -78,10 +79,8 @@ func SafeProject(id string) string {
 	if projectRe.MatchString(id) && id != "." && id != ".." {
 		return id
 	}
-	sum := make([]byte, 6)
-	for i, b := range []byte(id) {
-		sum[i%6] ^= b
-	}
+	full := sha256.Sum256([]byte(id))
+	sum := full[:8]
 	clean := regexp.MustCompile(`[^A-Za-z0-9._-]+`).ReplaceAllString(id, "-")
 	clean = strings.Trim(clean, "-._")
 	if len(clean) > 40 {

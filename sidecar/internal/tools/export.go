@@ -111,7 +111,7 @@ func buildCSV(m *Metadata, recs []*jsonv.Value, st *State) ([]byte, error) {
 			fix, dec, vuln = s.FixStatus, s.UserDecision, s.VulnID
 		}
 		_ = w.Write([]string{m.RunID, fp, f.Field("verdict").S, f.Field("severity").Field("overall_severity").S, f.Field("confidence").Field("score").S,
-			csvSafe(f.Field("title").S), file, fmt.Sprint(line), fix, dec, vuln, csvSafe(f.Field("description").S)})
+			csvSafe(f.Field("title").S), csvSafe(file), fmt.Sprint(line), fix, dec, vuln, csvSafe(f.Field("description").S)})
 	}
 	w.Flush()
 	return buf.Bytes(), w.Error()

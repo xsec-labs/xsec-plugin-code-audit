@@ -282,12 +282,12 @@ func buildReport(in reportInput) (report, detail, needs string) {
 			fmt.Fprintf(&d, "%d. %s\n", i+1, s.S)
 		}
 		for _, p := range ex.Field("payloads").A {
-			fmt.Fprintf(&d, "\n```\n%s\n```\n", p.S)
+			fmt.Fprintf(&d, "\n%s\n", fenced(p.S))
 		}
 		fmt.Fprintf(&d, "\n%s\n", ex.Field("observed_result").S)
 		fmt.Fprintf(&d, "\n### %s\n\n%s\n", L.fix, f.Field("remediation").Field("strategy").S)
 		for _, ch := range f.Field("remediation").Field("code_changes").A {
-			fmt.Fprintf(&d, "\n`%s`\n\n```\n%s\n```\n", ch.Field("file_name").S, ch.Field("fixed_code").S)
+			fmt.Fprintf(&d, "\n`%s`\n\n%s\n", ch.Field("file_name").S, fenced(ch.Field("fixed_code").S))
 		}
 	}
 	if !any {
@@ -477,4 +477,21 @@ func reportRead() *Tool {
 			return out, nil
 		},
 	}
+}
+
+// fenced wraps text in a code fence longer than any backtick run inside it, so audited text cannot end the fence.
+func fenced(text string) string {
+	longest, run := 0, 0
+	for _, r := range text {
+		if r == '`' {
+			run++
+			if run > longest {
+				longest = run
+			}
+		} else {
+			run = 0
+		}
+	}
+	fence := strings.Repeat("`", max(3, longest+1))
+	return fence + "\n" + text + "\n" + fence
 }
