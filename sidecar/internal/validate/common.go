@@ -237,3 +237,7 @@ func toUTF16(s string) []uint16 {
 	}
 	return out
 }
+
+// UTF16Less orders strings like JavaScript's < (by UTF-16 code units), which is how the upstream validators
+// require findings and ledger units to be sorted.
+func UTF16Less(a, b string) bool { return utf16Greater(b, a) }

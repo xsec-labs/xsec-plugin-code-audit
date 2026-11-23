@@ -71,6 +71,17 @@ func (v *Value) Get(key string) *Value {
 	return v.M[key]
 }
 
+var absent = &Value{Kind: Null}
+
+// Field is Get for readers that chain lookups: a missing member (or a non-object) yields a shared read-only
+// null, so v.Field("a").Field("b").S is "" instead of a nil dereference. Never modify the result.
+func (v *Value) Field(key string) *Value {
+	if m := v.Get(key); m != nil {
+		return m
+	}
+	return absent
+}
+
 // IsObject reports whether v is a non-null, non-array object.
 func (v *Value) IsObject() bool { return v != nil && v.Kind == Object }
 
