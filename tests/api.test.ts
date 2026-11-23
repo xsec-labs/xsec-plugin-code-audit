@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { AuditError, errorLines, listFindings, unwrap } from "../frontend-src/lib/api";
+import { AuditError, errorLines, listFindings, normalizeRunDetail, unwrap } from "../frontend-src/lib/api";
 
 const ok = (obj: unknown) => ({ content: [{ type: "text", text: JSON.stringify(obj) }], structuredContent: obj, isError: false });
 
@@ -36,4 +36,15 @@ test("listFindings pages past the sidecar's 500-row limit", async () => {
   const rows = await listFindings(host as never, "repo/run-1");
   assert.equal(rows.length, 1100);
   assert.deepEqual(calls, [0, 500, 1000]);
+});
+
+test("normalizeRunDetail turns null lists from the Go sidecar into empty lists", () => {
+  const d = normalizeRunDetail({ ok: true, run: { run_id: "r/run-1", focus: null }, files: null, agent_calls: 0, agents_running: null, agent_events: null });
+  assert.deepEqual(d.agents_running, []);
+  assert.deepEqual(d.agent_events, []);
+  assert.deepEqual(d.run.focus, []);
+  assert.deepEqual(d.files, {});
+  const kept = normalizeRunDetail({ run: { focus: ["x"] }, agents_running: [{ agent_id: "a" }], agent_events: [{ agent_id: "a" }] });
+  assert.equal(kept.agents_running.length, 1);
+  assert.deepEqual(kept.run.focus, ["x"]);
 });
