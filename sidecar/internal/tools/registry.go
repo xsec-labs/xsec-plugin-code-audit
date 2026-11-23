@@ -6,6 +6,6 @@ func All() []*Tool {
 		runStart(), runUpdate(), architecturePut(), agentNote(), runsList(), runGet(), runDelete(),
 		ledgerPut(), coverageGet(),
 		findingsPut(), findingsList(), findingGet(), findingStateSet(),
-		validateTool(), reportBuild(), exportTool(),
+		validateTool(), reportBuild(), reportRead(), exportTool(),
 	}
 }

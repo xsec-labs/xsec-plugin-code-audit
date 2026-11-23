@@ -40,6 +40,7 @@ PLUGIN_DATA/projects/<project>/state.json   per finding "<repo>:<fingerprint>": 
 | `code_audit_finding_state_set` | P | `run_id`, `fingerprint`, `fix_status` proposed/fixed/still_present/cannot_determine/none, `fix_note`, `user_decision` confirmed_by_user/excluded_by_user/none, `user_note`, `vuln_id` ("" unlinks) | `state` |
 | `code_audit_validate` | R | `run_id` | `ok`, `ledger` {units, errors[]}, `findings` {count, errors[]}, `warnings` {findings_not_linked_from_ledger[], open_units[]} |
 | `code_audit_report_build` | P | `run_id`, `language` zh (default) / en, `summary` (Markdown) | writes the three reports; marks the run `complete` (an `incomplete` run stays incomplete). Refused while a validator fails, or while ledger units are planned/in_progress/candidate in a run not marked incomplete. |
+| `code_audit_report_read` | R | `run_id`, `name` (`REPORT.md`, `FINDINGS-DETAIL.md`, `NEEDS-VALIDATION.md` or `architecture.md`; nothing else is accepted) | `name`, `markdown`, `bytes`, `truncated` (text cut at 4 MiB). Fails when the file is not written yet. |
 | `code_audit_export` | P | `run_id`, `format` sarif/csv/markdown/json, `include_needs_validation` | `path` (under `exports/`), `records`, `bytes`. SARIF 2.1.0; CSV has a BOM and neutralises formula cells. |
 | `code_audit_run_delete` | P | `run_id` | removes the run directory; per-finding state is kept |
 | `code_audit_runs_list` | R | `repo`, `limit` | `runs[]` newest first: status, phase, counts, budget, agent_calls, agents_running |

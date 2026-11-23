@@ -258,6 +258,15 @@ func TestCompleteRun(t *testing.T) {
 	if rep["run_status"] != StatusComplete {
 		t.Fatalf("report: %v", rep)
 	}
+	if r := h.must("code_audit_report_read", map[string]any{"run_id": run, "name": "REPORT.md"}); !strings.Contains(r["markdown"].(string), "Code audit report") {
+		t.Fatalf("report_read: %v", r)
+	}
+	if _, ok := h.call("code_audit_report_read", map[string]any{"run_id": run, "name": "../run-metadata.json"}); ok {
+		t.Fatal("report_read accepted a path")
+	}
+	if _, ok := h.call("code_audit_report_read", map[string]any{"run_id": run, "name": "architecture.md"}); ok {
+		t.Fatal("architecture.md was never written, read must fail")
+	}
 	body, err := os.ReadFile(filepath.Join(rep["output_dir"].(string), "REPORT.md"))
 	if err != nil || !strings.Contains(string(body), "Code audit report") {
 		t.Fatalf("REPORT.md: %v %q", err, body)

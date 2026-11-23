@@ -1,7 +1,9 @@
 package tools
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 
@@ -430,6 +432,49 @@ func reportBuild() *Tool {
 			}
 			return map[string]any{"ok": true, "run_status": m.RunStatus, "counts": m.Counts, "output_dir": c.Env.Store.Dir(ref),
 				"files": []string{store.FileReport, store.FileDetail, store.FileNeeds}, "warnings": check["warnings"]}, nil
+		},
+	}
+}
+
+var readableDocs = []string{store.FileReport, store.FileDetail, store.FileNeeds, store.FileArchitecture}
+
+const maxReadDocBytes = 4 << 20
+
+func reportRead() *Tool {
+	return &Tool{
+		Name: "code_audit_report_read",
+		Description: "Read one generated document of a run: REPORT.md, FINDINGS-DETAIL.md, NEEDS-VALIDATION.md or architecture.md. " +
+			"Only these four names are accepted; the text is returned as is (at most 4 MiB, with truncated=true beyond that).",
+		Schema:   schemaReportRead,
+		ReadOnly: true,
+		Handler: func(c *Call) (any, error) {
+			if err := c.strictKeys("run_id", "name"); err != nil {
+				return nil, err
+			}
+			ref, err := c.runRef()
+			if err != nil {
+				return nil, err
+			}
+			name, err := c.enum("name", true, readableDocs...)
+			if err != nil {
+				return nil, err
+			}
+			c.Env.Store.Lock()
+			defer c.Env.Store.Unlock()
+			raw, err := c.Env.Store.ReadFile(ref, name)
+			if errors.Is(err, os.ErrNotExist) {
+				return nil, errf("%s has not been written for run %s yet", name, ref.ID())
+			}
+			if err != nil {
+				return nil, err
+			}
+			out := map[string]any{"ok": true, "name": name, "bytes": len(raw)}
+			if len(raw) > maxReadDocBytes {
+				raw = raw[:maxReadDocBytes]
+				out["truncated"] = true
+			}
+			out["markdown"] = strings.ToValidUTF8(string(raw), "�")
+			return out, nil
 		},
 	}
 }

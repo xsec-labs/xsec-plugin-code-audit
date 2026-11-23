@@ -96,3 +96,5 @@ const schemaExport = `{"type":"object","properties":{
 "format":{"type":"string","enum":["sarif","csv","markdown","json"]},
 "include_needs_validation":{"type":"boolean"}
 },"required":["run_id","format"],"additionalProperties":false}`
+
+const schemaReportRead = `{"type":"object","properties":{"run_id":{"type":"string"},"name":{"type":"string","enum":["REPORT.md","FINDINGS-DETAIL.md","NEEDS-VALIDATION.md","architecture.md"]}},"required":["run_id","name"],"additionalProperties":false}`
