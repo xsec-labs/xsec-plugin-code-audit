@@ -130,6 +130,12 @@
           "xsec.plugin.config.set": {
             "capability": "pluginData.write",
             "binding": "plugin"
+          },
+          "xsec.code-audit.report.read": {
+            "capability": "workspace.project.read",
+            "binding": "context",
+            "mcpServer": "code-audit",
+            "mcpTool": "code_audit_report_read"
           }
         }
       },
@@ -274,6 +280,16 @@
           "validate": {
             "mcpServer": "code-audit",
             "mcpTool": "code_audit_validate",
+            "workspaceToolId": "code-audit",
+            "permission": "workspace.project.read",
+            "roles": [
+              "parent",
+              "sub"
+            ]
+          },
+          "report-read": {
+            "mcpServer": "code-audit",
+            "mcpTool": "code_audit_report_read",
             "workspaceToolId": "code-audit",
             "permission": "workspace.project.read",
             "roles": [
