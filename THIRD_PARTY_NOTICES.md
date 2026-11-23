@@ -29,7 +29,7 @@ per-file SHA-256 digests are recorded in `skills/security-audit/UPSTREAM.json` a
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 
-The Go validators in `sidecar/internal/validate` reimplement the rules of the skill's two Node validators
+The Go validators in `go/internal/mcpsidecar/codeaudit/validate` in xSecDesktop reimplement the rules of the skill's two Node validators
 (`validate-findings.cjs`, `validate-coverage-ledger.cjs`) with the same messages. `testdata/golden/` holds
 outputs recorded by running the upstream validators, which the Go tests must reproduce exactly.
 

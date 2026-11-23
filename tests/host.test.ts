@@ -18,3 +18,11 @@ test("a refusal keeps the host's reason and a success is sent", async () => {
   const fine = { request: async () => ({}) };
   assert.deepEqual(await toConversation(fine as never, "x"), { kind: "sent" });
 });
+
+test("Desktop's own refusals of an unknown method count as 'the host cannot', a real refusal does not", async () => {
+  const { hostLacksMethod } = await import("../frontend-src/lib/host");
+  for (const msg of ["METHOD_NOT_DECLARED: 插件 x 没有声明方法 y", "METHOD_UNIMPLEMENTED: 方法 y 是 context 绑定，但宿主没有对应的实现", "CAPABILITY_NOT_GRANTED: not granted", "unsupported Host RPC method"]) {
+    assert.equal(hostLacksMethod(new Error(msg)), true, msg);
+  }
+  assert.equal(hostLacksMethod(new Error("当前会话不可编辑")), false);
+});

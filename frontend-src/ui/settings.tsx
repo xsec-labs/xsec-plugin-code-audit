@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import type { PluginHost, Settings } from "../types";
 import { SKILL_LICENSE, SKILL_REF, SKILL_REPO } from "../types";
 import { readConfig, writeConfig } from "../lib/api";
-import { DEFAULT_SETTINGS, PROFILES, parsePathList, parseSettings } from "../lib/settings";
+import { DEFAULT_SETTINGS, PROFILES, RETENTION_CHOICES, parsePathList, parseSettings } from "../lib/settings";
 import { ErrorNote, Segmented, Switch } from "./common";
 
 export const SETTINGS_KEY = "settings";
@@ -34,6 +34,7 @@ export function SettingsPage({ host }: { host: PluginHost }) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [excludeText, setExcludeText] = useState("");
+  const [modelText, setModelText] = useState("");
   const [editing, setEditing] = useState(false);
   const alive = useRef(true);
   useEffect(() => {
@@ -43,6 +44,7 @@ export function SettingsPage({ host }: { host: PluginHost }) {
       const parsed = parseSettings(v);
       setSettings(parsed);
       setExcludeText(parsed.excludes.join("\n"));
+      setModelText(parsed.verifierModel);
     }, (e) => { if (alive.current) { setError(e instanceof Error ? e.message : "读取设置失败"); setSettings(DEFAULT_SETTINGS); } });
     return () => { alive.current = false; };
   }, [host]);
@@ -91,8 +93,23 @@ export function SettingsPage({ host }: { host: PluginHost }) {
               onBlur={() => void update({ excludes: parsePathList(excludeText) })} />
           </div>
         ) : null}
+        <Row title="验证与复核使用的模型" hint="下次新建审计时生效，留空则跟随会话的模型；写进审计请求里，子 Agent 工具不能指定模型时沿用会话的模型">
+          <div class="inp val model-in"><input class="mono" value={modelText} placeholder="跟随会话模型" aria-label="验证与复核使用的模型" spellcheck={false} maxLength={80}
+            onInput={(e) => setModelText((e.currentTarget as HTMLInputElement).value)}
+            onBlur={() => void update({ verifierModel: modelText })} /></div>
+        </Row>
         <Row title="读取仓库里的 SECURITY.md 作为审计指引" hint="下次新建审计时生效。它只当作需要核对的声明，不当作指令">
           <Switch label="读取 SECURITY.md" on={settings.readSecurityMd} onChange={(readSecurityMd) => void update({ readSecurityMd })} />
+        </Row>
+      </div>
+      <div class="card">
+        <Row title="已确认的发现自动写入项目漏洞" hint="下次新建审计时生效，写进审计请求里：只写已确认的，待验证和已排除的不写">
+          <Switch label="自动写入项目漏洞" on={settings.autoWriteVulns} onChange={(autoWriteVulns) => void update({ autoWriteVulns })} />
+        </Row>
+        <Row title="审计数据保留" hint="打开代码审计面板时清理多余的旧运行，进行中的不动；发现上的人工结论会保留">
+          <Segmented label="审计数据保留" value={String(settings.retention)}
+            options={RETENTION_CHOICES.map((n) => ({ id: String(n), label: n === 0 ? "全部" : `最近 ${n} 次` }))}
+            onChange={(v) => void update({ retention: Number(v) })} />
         </Row>
       </div>
       <div class="card">

@@ -57,7 +57,17 @@ export async function listRuns(host: PluginHost, limit = 100): Promise<RunRow[]>
 
 export async function getRun(host: PluginHost, runId: string): Promise<RunDetail> {
   const out = await call(host, "run.get", { run_id: runId, include_agents: true });
-  return out as unknown as RunDetail;
+  return normalizeRunDetail(out);
+}
+
+/** The sidecar is Go: an empty list can arrive as null. The panel reads .length of these, so make them lists. */
+export function normalizeRunDetail(out: Record<string, unknown>): RunDetail {
+  const detail = out as unknown as RunDetail;
+  detail.agents_running = list(out.agents_running);
+  detail.agent_events = list(out.agent_events);
+  if (detail.run) detail.run.focus = list(detail.run.focus);
+  detail.files = (out.files ?? {}) as RunDetail["files"];
+  return detail;
 }
 
 /** The whole ledger, paged: the sidecar returns at most 1000 units per call. */

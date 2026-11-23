@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import type { Coverage, FindingRow, PluginContext, PluginHost, ReportName, RunDetail, RunRow, Settings } from "../types";
-import { getCoverage, getRun, listFindings, listRuns, readConfig, AuditError } from "../lib/api";
-import { defaultRun, sortFindings } from "../lib/derive";
-import { toConversation } from "../lib/host";
+import { deleteRun, getCoverage, getRun, listFindings, listRuns, readConfig, AuditError } from "../lib/api";
+import { defaultRun, sortFindings, surplusRuns } from "../lib/derive";
+import { setMaximized, toConversation } from "../lib/host";
 import { DEFAULT_SETTINGS, parseSettings } from "../lib/settings";
 import type { Session, View } from "./session";
 import { Empty, ErrorNote, RequestSheet, Toast, useToast } from "./common";
@@ -58,6 +58,8 @@ export function WorkspaceApp({ host, context, visible }: { host: PluginHost; con
   const [toast, notify] = useToast();
   const [request, setRequest] = useState<{ text: string; reason: string } | null>(null);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [settingsRead, setSettingsRead] = useState(false);
+  const [focused, setFocused] = useState(false);
   const [runs, setRuns] = useState<RunRow[] | null>(null);
   const [loadError, setLoadError] = useState<unknown>(null);
   const [runId, setRunId] = useState<string | null>(null);
@@ -81,9 +83,32 @@ export function WorkspaceApp({ host, context, visible }: { host: PluginHost; con
   // Settings (defaults for the Start page).
   useEffect(() => {
     let live = true;
-    readConfig(host, SETTINGS_KEY).then((v) => { if (live) setSettings(parseSettings(v)); }, () => undefined);
+    readConfig(host, SETTINGS_KEY).then((v) => { if (live) { setSettings(parseSettings(v)); setSettingsRead(true); } }, () => undefined);
     return () => { live = false; };
   }, [host]);
+
+  // Retention: only a number the user chose in the settings page deletes anything (the default keeps all runs). The
+  // stored settings are read again right before deleting, so a change made on the settings page while this panel stayed
+  // open counts. At most 5 finished runs per pass, never a running one; the sidecar keeps the per-finding decisions.
+  const pruning = useRef(false);
+  const notifyRef = useRef(notify);
+  notifyRef.current = notify;
+  useEffect(() => {
+    if (!runs || !settingsRead || readOnly || pruning.current || settings.retention <= 0) return;
+    if (!surplusRuns(runs, settings.retention).length) return;
+    pruning.current = true;
+    (async () => {
+      let gone = 0;
+      try {
+        const keep = parseSettings(await readConfig(host, SETTINGS_KEY)).retention;
+        for (const r of surplusRuns(runs, keep).slice(0, 5)) {
+          try { await deleteRun(host, r.run_id); gone += 1; } catch { break; }
+        }
+      } catch { /* settings unreadable: delete nothing */ }
+      pruning.current = false;
+      if (gone) { notifyRef.current(`已按保留设置清理 ${gone} 次旧运行`); setTick((t) => t + 1); }
+    })();
+  }, [runs, settingsRead, settings.retention, readOnly, host]);
 
   // Runs list: the heartbeat of the panel.
   useEffect(() => {
@@ -153,6 +178,23 @@ export function WorkspaceApp({ host, context, visible }: { host: PluginHost; con
     return "manual" as const;
   }, [host, notify]);
 
+  // Focus mode asks the host to give the panel the whole content area. The host does not tell the page when the user
+  // leaves it (Esc, the header button), so a panel that is no longer wide is no longer focused.
+  // The reset only follows a real change: the panel was seen wide while focused and is not any more. Right after the
+  // toggle the width has not changed yet, so a narrow panel that has just been asked to focus must not reset itself.
+  const seenWideFocused = useRef(false);
+  useEffect(() => {
+    if (!focused) { seenWideFocused.current = false; return; }
+    if (wide) seenWideFocused.current = true;
+    else if (seenWideFocused.current) { seenWideFocused.current = false; setFocused(false); }
+  }, [focused, wide]);
+  const toggleFocus = useCallback(async () => {
+    const next = !focused;
+    const result = await setMaximized(host, next);
+    if (result.ok) { seenWideFocused.current = false; setFocused(next); }
+    else notify(result.reason ? `不能进入专注模式：${result.reason}` : "这个版本的 Desktop 还不能专注面板", "err");
+  }, [host, focused, notify]);
+
   const session: Session = {
     host, settings, readOnly, wide, runs: runs ?? [], run, detail, findings, coverage, now, notify, send,
     reload: () => setTick((t) => t + 1),
@@ -219,6 +261,9 @@ export function WorkspaceApp({ host, context, visible }: { host: PluginHost; con
               </button>
             ))}
           </nav>
+        ) : null}
+        {runs && run && view !== "start" && !readOnly ? (
+          <button type="button" class="ib" aria-label={focused ? "退出专注" : "专注"} title={focused ? "退出专注" : "专注：铺满内容区"} aria-pressed={focused} onClick={() => void toggleFocus()}><Icon name={focused ? "minimize" : "maximize"} /></button>
         ) : null}
         {runs && (run ? view !== "start" : false) ? (
           <button type="button" class="ib" aria-label="新建审计" title="新建审计" onClick={() => session.go("start")}><Icon name="plus" /></button>

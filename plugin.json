@@ -136,6 +136,18 @@
             "binding": "context",
             "mcpServer": "code-audit",
             "mcpTool": "code_audit_report_read"
+          },
+          "xsec.workspace.composer.text.add": {
+            "capability": "workspace.composer.write",
+            "binding": "context"
+          },
+          "xsec.workspace.directory.pick": {
+            "capability": "filesystem.workspace.read",
+            "binding": "context"
+          },
+          "xsec.workspace.panel.maximize": {
+            "capability": "workspace.panel.maximize",
+            "binding": "context"
           }
         }
       },

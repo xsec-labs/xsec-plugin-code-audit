@@ -177,4 +177,10 @@ export type Settings = {
   concurrency: number;
   excludes: string[];
   readSecurityMd: boolean;
+  /** Model the verifier and reviewer sub-agents should use; empty follows the session's model. */
+  verifierModel: string;
+  /** Ask the Agent to write confirmed findings into the project's vulnerabilities and link them. */
+  autoWriteVulns: boolean;
+  /** Keep this many newest finished runs per project; 0 keeps all. */
+  retention: number;
 };
