@@ -317,3 +317,29 @@ func TestAuditDataDirNotAuditable(t *testing.T) {
 		t.Fatal("insideDir")
 	}
 }
+
+func TestFencedOutgrowsBackticks(t *testing.T) {
+	got := fenced("a ``` b\n````x")
+	if !strings.HasPrefix(got, "`````\n") || !strings.HasSuffix(got, "\n`````") {
+		t.Fatalf("fence: %q", got)
+	}
+	if fenced("plain") != "```\nplain\n```" {
+		t.Fatal("plain fence")
+	}
+	if store.SafeProject("a b") == store.SafeProject("b a") || store.SafeProject("x y") != store.SafeProject("x y") {
+		t.Fatal("hashed project ids must differ for different ids and be stable")
+	}
+}
+
+func TestDataDirCannotBeAuditedThroughALinkOrSubdirectory(t *testing.T) {
+	h := newHarness(t)
+	link := filepath.Join(t.TempDir(), "lnk")
+	if err := os.Symlink(h.env.Store.Root(), link); err == nil {
+		if _, ok := h.call("code_audit_run_start", map[string]any{"target": link}); ok {
+			t.Fatal("symlink to the data directory accepted")
+		}
+	}
+	if _, ok := h.call("code_audit_run_start", map[string]any{"target": filepath.Join(h.env.Store.Root(), "runs")}); ok {
+		t.Fatal("subdirectory of the data directory accepted")
+	}
+}
