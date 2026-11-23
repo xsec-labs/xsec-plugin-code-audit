@@ -90,12 +90,14 @@ func findingsPut() *Tool {
 			}
 			incoming := map[string]bool{}
 			var loose []*jsonv.Value
-			for _, r := range recs.A {
-				if fp := r.Field("fingerprint"); r.IsObject() && fp.IsString() {
-					byFP[fp.S] = r
-					incoming[fp.S] = true
-				} else {
-					loose = append(loose, r)
+			if recs.IsArray() { // records is optional: remove[] may be used alone
+				for _, r := range recs.A {
+					if fp := r.Field("fingerprint"); r.IsObject() && fp.IsString() {
+						byFP[fp.S] = r
+						incoming[fp.S] = true
+					} else {
+						loose = append(loose, r)
+					}
 				}
 			}
 			fps := make([]string, 0, len(byFP))

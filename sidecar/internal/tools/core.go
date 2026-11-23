@@ -66,7 +66,13 @@ type Result struct {
 }
 
 // Invoke runs the tool.
-func (t *Tool) Invoke(ctx context.Context, env *Env, meta Meta, rawArgs json.RawMessage) Result {
+func (t *Tool) Invoke(ctx context.Context, env *Env, meta Meta, rawArgs json.RawMessage) (res Result) {
+	// A bug in one handler must fail that call, never take the whole sidecar (and every other call) down.
+	defer func() {
+		if r := recover(); r != nil {
+			res = failure(errf("internal error in %s: %v", t.Name, r))
+		}
+	}()
 	args := jsonv.NewObject()
 	if len(rawArgs) > 0 && string(rawArgs) != "null" {
 		v, err := jsonv.Parse(rawArgs)
@@ -81,6 +87,9 @@ func (t *Tool) Invoke(ctx context.Context, env *Env, meta Meta, rawArgs json.Raw
 	ident, err := env.Host.Resolve(ctx, meta.ContextHandle, t.Name)
 	if err != nil {
 		return failure(errf("cannot resolve the project for this call: %v", err))
+	}
+	if ident.Role != "parent" && ident.Role != "sub" {
+		return failure(errf("cannot resolve the project for this call: unknown agent role %q", ident.Role))
 	}
 	if t.ParentOnly && ident.Role == "sub" {
 		return failure(errf("%s may only be called by the parent agent", t.Name))

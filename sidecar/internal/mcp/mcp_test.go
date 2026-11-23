@@ -81,3 +81,21 @@ func TestProtocol(t *testing.T) {
 
 func mustJSON(s string) string { return string(mustMarshal(s)) }
 func mustMarshal(v any) []byte { b, _ := json.Marshal(v); return b }
+
+func TestPanicInHandlerKeepsServerAlive(t *testing.T) {
+	st, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	boom := &tools.Tool{Name: "boom", Schema: `{"type":"object"}`, Handler: func(*tools.Call) (any, error) { panic("bug") }}
+	srv := &Server{Env: &tools.Env{Store: st, Host: hostctx.Standalone{}, Now: time.Now}, Tools: []*tools.Tool{boom}}
+	in := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"boom","arguments":{}}}` + "\n" +
+		`{"jsonrpc":"2.0","id":2,"method":"ping"}` + "\n"
+	var out bytes.Buffer
+	if err := srv.Serve(context.Background(), strings.NewReader(in), &out); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), `"id":2`) || !strings.Contains(out.String(), "internal error") {
+		t.Fatalf("server did not survive a panicking tool: %s", out.String())
+	}
+}
