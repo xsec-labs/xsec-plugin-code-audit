@@ -14,11 +14,11 @@ export const DEFAULT_SETTINGS: Settings = {
   readSecurityMd: true,
   verifierModel: "",
   autoWriteVulns: false,
-  retention: 20,
+  retention: 0,
 };
 
-/** Choices shown for the retention setting; 0 keeps everything. */
-export const RETENTION_CHOICES = [10, 20, 50, 0] as const;
+/** Choices shown for the retention setting; 0 keeps everything and is the default: nothing is deleted until the user picks a number. */
+export const RETENTION_CHOICES = [0, 10, 20, 50] as const;
 
 function int(value: unknown, fallback: number, min: number, max: number): number {
   const n = typeof value === "number" ? value : typeof value === "string" && value.trim() ? Number(value) : NaN;

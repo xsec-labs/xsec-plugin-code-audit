@@ -51,7 +51,8 @@ export function copySync(text: string): boolean {
 
 export const COMPOSER_TEXT_METHOD = "xsec.workspace.composer.text.add";
 
-const METHOD_MISSING = /unsupported|not (mounted|implemented|declared|found|allowed)|unknown|undeclared|no such/i;
+// Desktop's own wording (broker codes and their Chinese messages) as well as the generic English phrasings.
+const METHOD_MISSING = /unsupported|not (mounted|implemented|declared|found|allowed|granted)|unknown|undeclared|no such|METHOD_(NOT_DECLARED|UNIMPLEMENTED|MISMATCH)|CAPABILITY_NOT_GRANTED|没有声明方法|没有对应的实现/i;
 
 /**
  * Put a request into the conversation's input box. Desktop has no text method for plugins yet, so when the host

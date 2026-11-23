@@ -37,7 +37,7 @@ export function profileLabel(profile: string): string {
  */
 export function startRequest(form: StartForm, settings: Settings, hasPrior: boolean): string {
   const lines: string[] = [];
-  const target = form.target.trim();
+  const target = form.target.replace(/[\u0000-\u001f\u007f\u2028\u2029]+/g, " ").trim();
   lines.push(`请用 xsec-code-audit 技能对${target ? ` ${target} ` : "当前项目目录"}做一次源码安全审计（只读源码，不运行目标代码）。`);
   lines.push("");
   lines.push("参数：");

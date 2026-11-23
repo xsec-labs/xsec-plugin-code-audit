@@ -1,9 +1,11 @@
 import { useEffect, useState } from "preact/hooks";
 import type { Session } from "./session";
 import type { Profile, Scope } from "../types";
-import { PROFILES, parsePathList } from "../lib/settings";
+import { PROFILES, parsePathList, parseSettings } from "../lib/settings";
 import { FOCUS_AREAS, startRequest, type StartForm } from "../lib/request";
 import { pickDirectory } from "../lib/host";
+import { readConfig } from "../lib/api";
+import { SETTINGS_KEY } from "./settings";
 import { Segmented, Switch } from "./common";
 import { Icon } from "./icons";
 
@@ -39,6 +41,7 @@ export function StartView({ s, onStarted }: { s: Session; onStarted(): void }) {
   const problem =
     form.scope === "paths" && full.paths.length === 0 ? "填写要审的路径"
     : form.scope === "diff" && !form.base.trim() ? "填写对比的起点（提交或分支）"
+    : /[\u0000-\u001f\u007f\u2028\u2029]/.test(form.target) ? "目录里不能有换行等控制字符"
     : target && !/^(\/|[A-Za-z]:[\\/])/.test(target) ? "目录需要是绝对路径"
     : "";
   const visibleFocus = allFocus ? FOCUS_AREAS : FOCUS_AREAS.slice(0, 5);
@@ -50,7 +53,10 @@ export function StartView({ s, onStarted }: { s: Session; onStarted(): void }) {
   }
 
   async function start() {
-    const text = startRequest(full, s.settings, hasPrior);
+    // The settings page may have changed since this panel mounted: read them again for the lines they add to the request.
+    let settings = s.settings;
+    try { settings = parseSettings(await readConfig(s.host, SETTINGS_KEY)); } catch { /* keep the ones already read */ }
+    const text = startRequest(full, settings, hasPrior);
     const result = await s.send(text, "已把审计请求放进对话输入框，发送后 Agent 就会开始");
     if (result === "sent") onStarted();
   }
