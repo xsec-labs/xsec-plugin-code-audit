@@ -80,6 +80,12 @@ func (s *Server) Serve(ctx context.Context, in io.Reader, out io.Writer) error {
 				wg.Add(1)
 				go func() {
 					defer func() { <-sem; wg.Done() }()
+					defer func() {
+						if r := recover(); r != nil {
+							s.Log("panic while handling %s: %v", req.Method, r)
+							s.reply(req.ID, nil, &rpcError{Code: -32603, Message: "internal error"})
+						}
+					}()
 					s.handle(ctx, &req)
 				}()
 			} else {

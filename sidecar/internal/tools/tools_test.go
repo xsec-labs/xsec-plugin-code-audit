@@ -275,3 +275,45 @@ func TestCompleteRun(t *testing.T) {
 		t.Fatalf("meta: %v", got)
 	}
 }
+
+// records is optional: remove[] alone must work, and a failing handler must fail its call, not the process.
+func TestFindingsPutRemoveOnly(t *testing.T) {
+	h := newHarness(t)
+	run := h.must("code_audit_run_start", map[string]any{"target": h.target})["run_id"].(string)
+	h.must("code_audit_findings_put", map[string]any{"run_id": run, "records": []any{confirmed("src-handler-missing-check", "src/handler.c")}})
+	h.must("code_audit_findings_put", map[string]any{"run_id": run, "remove": []string{"src-handler-missing-check"}})
+	list := h.must("code_audit_findings_list", map[string]any{"run_id": run})
+	if n, _ := list["total"].(float64); n != 0 {
+		t.Fatalf("finding not removed: %v", list)
+	}
+}
+
+func TestHandlerPanicFailsOnlyTheCall(t *testing.T) {
+	h := newHarness(t)
+	boom := &Tool{Name: "boom", Schema: `{"type":"object"}`, Handler: func(*Call) (any, error) {
+		var m map[string]*int
+		return *m["x"], nil
+	}}
+	res := boom.Invoke(context.Background(), h.env, Meta{ContextHandle: "h"}, json.RawMessage(`{}`))
+	if !res.IsError || !strings.Contains(res.Text, "internal error in boom") {
+		t.Fatalf("panic not turned into a tool failure: %+v", res)
+	}
+}
+
+func TestUnknownRoleRefused(t *testing.T) {
+	h := newHarness(t)
+	h.env.Host = hostFunc(func() hostctx.Identity { return hostctx.Identity{ProjectID: "p", Role: "Parent "} })
+	if out, ok := h.call("code_audit_run_start", map[string]any{"target": h.target}); ok || !strings.Contains(fmt.Sprint(out), "unknown agent role") {
+		t.Fatalf("unknown role accepted: %v", out)
+	}
+}
+
+func TestAuditDataDirNotAuditable(t *testing.T) {
+	h := newHarness(t)
+	if _, ok := h.call("code_audit_run_start", map[string]any{"target": h.env.Store.Root()}); ok {
+		t.Fatal("the data directory itself was accepted as a target")
+	}
+	if !insideDir("/a/b", "/a/b/c") || insideDir("/a/b", "/a/..foo") || !insideDir("/a/b", "/a/b") {
+		t.Fatal("insideDir")
+	}
+}

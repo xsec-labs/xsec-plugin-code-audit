@@ -68,3 +68,9 @@ The manifest binds the read tools as frontend methods (`xsec.code-audit.runs.lis
 `run.delete`). Starting an audit is **not** a tool call from the panel: it sends a request into the conversation and the
 session's Agent calls `code_audit_run_start` (plan §3.3). Poll `runs.list` / `run.get` every 2 s while a run is
 `in_progress`; `run.get.agents_running` is the running list.
+
+## Known limits (v1)
+
+- `run_start.target` may be any absolute directory the sidecar can read; it is not yet confined to the workspace. The plan is for `xsec.code-audit.context` to return the workspace root and for the sidecar to require `target` inside it (needs a Desktop change, tracked for before the plugin is enabled by default). Until then the data directory itself is refused and every file reference is checked against the target with symlinks resolved.
+- A handler panic fails only that call (`isError`), never the sidecar process.
+- Only the roles `parent` and `sub` are accepted; any other role from the host fails the call.

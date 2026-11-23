@@ -47,7 +47,7 @@ func runStart() *Tool {
 			if st, err := os.Stat(target); err != nil || !st.IsDir() {
 				return nil, errf("target: %s is not an accessible directory", target)
 			}
-			if rel, err := filepath.Rel(c.Env.Store.Root(), target); err == nil && !strings.HasPrefix(rel, "..") {
+			if insideDir(c.Env.Store.Root(), target) {
 				return nil, errf("target: the audit data directory itself cannot be audited")
 			}
 			profile, err := c.enum("profile", false, profiles...)
@@ -587,3 +587,18 @@ func jsonOf(v any) string {
 }
 
 var _ = fmt.Sprintf
+
+// insideDir reports whether path is dir or lies below it, after resolving symlinks on both sides.
+func insideDir(dir, path string) bool {
+	if r, err := filepath.EvalSymlinks(dir); err == nil {
+		dir = r
+	}
+	if r, err := filepath.EvalSymlinks(path); err == nil {
+		path = r
+	}
+	rel, err := filepath.Rel(dir, path)
+	if err != nil {
+		return false
+	}
+	return rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
+}
