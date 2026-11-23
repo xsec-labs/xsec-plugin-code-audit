@@ -75,7 +75,14 @@ export async function getCoverage(host: PluginHost, runId: string): Promise<Cove
 }
 
 export async function listFindings(host: PluginHost, runId: string): Promise<FindingRow[]> {
-  return list<FindingRow>((await call(host, "findings.list", { run_id: runId, limit: 500 })).findings);
+  const rows: FindingRow[] = [];
+  for (let offset = 0; offset < 10_000; offset += 500) {
+    const out = await call(host, "findings.list", { run_id: runId, limit: 500, offset });
+    const page = list<FindingRow>(out.findings);
+    rows.push(...page);
+    if (page.length < 500 || rows.length >= Number(out.total ?? 0)) break;
+  }
+  return rows;
 }
 
 export async function getFinding(host: PluginHost, runId: string, fingerprint: string): Promise<FindingDetail> {

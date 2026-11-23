@@ -15,8 +15,8 @@ export type Session = {
   coverage: Coverage | undefined;
   now: number;
   notify(text: string, tone?: "ok" | "err"): void;
-  /** Send a request to the conversation (or copy it); resolves with the toast text that was shown. */
-  send(text: string, doneText?: string): Promise<"sent" | "copied" | "failed">;
+  /** Send a request to the conversation. When the host cannot take it, the panel opens the request text to copy by hand. */
+  send(text: string, doneText?: string): Promise<"sent" | "manual">;
   reload(): void;
   selectRun(runId: string): void;
   go(view: View): void;

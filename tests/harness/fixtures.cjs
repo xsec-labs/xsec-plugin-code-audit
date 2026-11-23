@@ -46,7 +46,7 @@ module.exports = {
       { name: "report", run: nav("报告") },
       { name: "doc", run: async (p) => { await p.getByRole("button", { name: "打开" }).first().click(); } },
       { name: "start", run: async (p) => { await p.locator(".detbar .ib").first().click(); await p.locator("button[aria-label='新建审计']").click(); } },
-      { name: "start-sent", run: async (p) => { await p.getByRole("button", { name: "代码变更" }).click(); await p.locator("input[aria-label='起点']").fill("main"); await p.getByRole("button", { name: "开始审计" }).click(); await p.waitForTimeout(300); } },
+      { name: "start-manual", run: async (p) => { await p.getByRole("button", { name: "代码变更" }).click(); await p.locator("input[aria-label='起点']").fill("main"); await p.getByRole("button", { name: "开始审计" }).click(); await p.waitForTimeout(300); } },
     ],
   },
   running: {

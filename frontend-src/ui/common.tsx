@@ -1,7 +1,8 @@
 import type { ComponentChildren } from "preact";
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import type { Severity, Verdict } from "../types";
 import { SEVERITY_GLYPH, SEVERITY_LABEL, VERDICT_LABEL } from "../lib/derive";
+import { copySync } from "../lib/host";
 import { Icon } from "./icons";
 
 /** Severity square; a candidate without a rating shows 待, a rejected one 排 (verdict decides when there is no severity). */
@@ -97,4 +98,38 @@ export function ConfirmButton({ label, confirmLabel, onConfirm, disabled }: { la
 export function Meter({ value, max }: { value: number; max: number }) {
   const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
   return <div class="meter" role="progressbar" aria-valuemin={0} aria-valuemax={max} aria-valuenow={value}><i style={{ width: `${pct}%` }} /></div>;
+}
+
+/**
+ * The request text for the user to put into the conversation by hand, shown whenever the host could not take it.
+ * The copy button copies inside its own click, because the clipboard needs the user gesture.
+ */
+export function RequestSheet({ text, reason, onClose }: { text: string; reason: string; onClose(): void }) {
+  const area = useRef<HTMLTextAreaElement | null>(null);
+  const [copied, setCopied] = useState<"" | "ok" | "fail">("");
+  useEffect(() => { area.current?.focus(); area.current?.select(); }, [text]);
+  const onCopy = () => {
+    const ok = copySync(text);
+    setCopied(ok ? "ok" : "fail");
+    if (!ok) { area.current?.focus(); area.current?.select(); }
+  };
+  return (
+    <div class="sheet-wrap" role="dialog" aria-label="审计请求" onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}>
+      <div class="sheet">
+        <div class="bar">
+          <b>放进对话输入框的请求</b><span class="grow" />
+          <button type="button" class="ib" aria-label="关闭" onClick={onClose}><Icon name="x" /></button>
+        </div>
+        <div class="pad col-gap">
+          <span class="muted small">{reason ? `宿主没有接受：${reason}。` : ""}复制后粘贴到对话输入框并发送。</span>
+          <textarea ref={area} class="inp area mono" readOnly rows={9} value={text} onFocus={(e) => (e.currentTarget as HTMLTextAreaElement).select()} aria-label="请求文本" />
+          <div class="row-end">
+            <span class="muted small grow" role="status">{copied === "ok" ? "已复制" : copied === "fail" ? "复制被宿主拒绝，请手动选取文本" : ""}</span>
+            <button type="button" class="btn sm" onClick={onClose}>关闭</button>
+            <button type="button" class="btn sm pri" onClick={onCopy}>复制</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

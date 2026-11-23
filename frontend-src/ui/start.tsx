@@ -27,7 +27,6 @@ export function StartView({ s, onStarted }: { s: Session; onStarted(): void }) {
   }));
   const [pathsText, setPathsText] = useState("");
   const [allFocus, setAllFocus] = useState(false);
-  const [pasted, setPasted] = useState<string | null>(null);
   const set = (patch: Partial<StartForm>) => setForm((f) => ({ ...f, ...patch }));
   // The settings page may load after this view mounts; fill the defaults once when they arrive and the user has not touched them.
   useEffect(() => { setForm((f) => ({ ...f, profile: s.settings.profile, budget: s.settings.budget })); }, [s.settings.profile, s.settings.budget]);
@@ -39,7 +38,7 @@ export function StartView({ s, onStarted }: { s: Session; onStarted(): void }) {
   const problem =
     form.scope === "paths" && full.paths.length === 0 ? "填写要审的路径"
     : form.scope === "diff" && !form.base.trim() ? "填写对比的起点（提交或分支）"
-    : target && !/^([/~]|[A-Za-z]:[\\/])/.test(target) ? "目录需要是绝对路径"
+    : target && !/^(\/|[A-Za-z]:[\\/])/.test(target) ? "目录需要是绝对路径"
     : "";
   const visibleFocus = allFocus ? FOCUS_AREAS : FOCUS_AREAS.slice(0, 5);
 
@@ -47,7 +46,6 @@ export function StartView({ s, onStarted }: { s: Session; onStarted(): void }) {
     const text = startRequest(full, s.settings, hasPrior);
     const result = await s.send(text, "已把审计请求放进对话输入框，发送后 Agent 就会开始");
     if (result === "sent") onStarted();
-    else if (result === "copied") setPasted(text);
   }
 
   return (
@@ -101,12 +99,6 @@ export function StartView({ s, onStarted }: { s: Session; onStarted(): void }) {
           <label class="swrow"><Switch label="沿用上次运行的结论" on={form.continuePrior && hasPrior} disabled={!hasPrior} onChange={(v) => set({ continuePrior: v })} /><span>沿用上次运行的结论，只补未覆盖和有改动的部分{hasPrior ? "" : <span class="muted"> 还没有上次的运行</span>}</span></label>
           <label class="swrow"><Switch label="在沙箱里运行目标代码" on={false} disabled onChange={() => undefined} /><span>允许在沙箱里运行目标代码做验证 <span class="muted">第一版只读源码</span></span></label>
         </div>
-        {pasted ? (
-          <div class="pasted" role="status">
-            <b>请求已复制，粘贴到对话输入框并发送就会开始审计。</b>
-            <textarea class="inp area mono" readOnly rows={8} value={pasted} onFocus={(e) => (e.currentTarget as HTMLTextAreaElement).select()} aria-label="审计请求" />
-          </div>
-        ) : null}
       </div>
       <div class="foot">
         <span class="muted small grow">{problem || `预计 ${profile.calls.replace("约 ", "")}，不运行目标代码`}</span>

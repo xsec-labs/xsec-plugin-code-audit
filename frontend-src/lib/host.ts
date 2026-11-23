@@ -1,6 +1,6 @@
 import type { PluginHost } from "../types";
 
-/** The theme the host pushes has no colour mode, so the page derives it from the surface colour. */
+/** The host pushes color-mode and on-primary; when an older host does not, the page derives them from the surface and accent colours. */
 export function luminance(color: string): number | undefined {
   const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color.trim());
   let r: number, g: number, b: number;
@@ -19,6 +19,9 @@ export function luminance(color: string): number | undefined {
 export type ThemeFacts = { dark: boolean; onPrimary: string };
 
 export function themeFacts(theme: Record<string, string>): ThemeFacts {
+  const mode = theme["color-mode"];
+  const pushedOn = theme["on-primary"];
+  if ((mode === "dark" || mode === "light") && pushedOn) return { dark: mode === "dark", onPrimary: pushedOn };
   const surface = luminance(theme["content-surface"] ?? theme["window-background"] ?? "");
   const accent = luminance(theme["text-accent"] ?? "");
   return {
@@ -28,12 +31,11 @@ export function themeFacts(theme: Record<string, string>): ThemeFacts {
   };
 }
 
-export type SendResult = "sent" | "copied" | "failed";
+/** "sent": the text is in the composer. "manual": it is not, and the panel shows it for the user to copy. */
+export type SendResult = { kind: "sent" } | { kind: "manual"; reason: string };
 
-async function copyText(text: string): Promise<boolean> {
-  try {
-    if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(text); return true; }
-  } catch { /* fall through to the selection route */ }
+/** Copy from inside a click handler: `execCommand` needs the user gesture, so nothing may be awaited before it. */
+export function copySync(text: string): boolean {
   try {
     const area = document.createElement("textarea");
     area.value = text;
@@ -49,18 +51,18 @@ async function copyText(text: string): Promise<boolean> {
 
 export const COMPOSER_TEXT_METHOD = "xsec.workspace.composer.text.add";
 
+const METHOD_MISSING = /unsupported|not (mounted|implemented|declared|found|allowed)|unknown|undeclared|no such/i;
+
 /**
  * Put a request into the conversation's input box. Desktop has no text method for plugins yet, so when the host
- * does not offer COMPOSER_TEXT_METHOD (or the session cannot be edited) the text goes to the clipboard instead.
+ * does not offer COMPOSER_TEXT_METHOD (or refuses it) the caller shows the text for the user to copy by hand.
  */
 export async function toConversation(host: PluginHost, text: string): Promise<SendResult> {
   try {
     await host.request(COMPOSER_TEXT_METHOD, { text });
-    return "sent";
-  } catch { /* the host has no such method for this plugin yet */ }
-  return (await copyText(text)) ? "copied" : "failed";
-}
-
-export async function copy(text: string): Promise<boolean> {
-  return copyText(text);
+    return { kind: "sent" };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error ?? "");
+    return { kind: "manual", reason: METHOD_MISSING.test(message) ? "" : message };
+  }
 }

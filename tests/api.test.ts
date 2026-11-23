@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { AuditError, errorLines, unwrap } from "../frontend-src/lib/api";
+import { AuditError, errorLines, listFindings, unwrap } from "../frontend-src/lib/api";
 
 const ok = (obj: unknown) => ({ content: [{ type: "text", text: JSON.stringify(obj) }], structuredContent: obj, isError: false });
 
@@ -20,4 +20,20 @@ test("unwrap turns isError and ok:false into AuditError with the sidecar message
   assert.throws(() => unwrap({ content: [{ type: "text", text: "boom" }], isError: true }), /boom/);
   assert.throws(() => unwrap(null), AuditError);
   assert.throws(() => unwrap({ content: [] }), AuditError);
+});
+
+test("listFindings pages past the sidecar's 500-row limit", async () => {
+  const calls: number[] = [];
+  const host = {
+    async request(_method: string, params: { offset: number; limit: number }) {
+      calls.push(params.offset);
+      const n = Math.min(params.limit, 1100 - params.offset);
+      const findings = Array.from({ length: n }, (_, i) => ({ fingerprint: `fp-${params.offset + i}` }));
+      const body = { ok: true, total: 1100, findings };
+      return { content: [{ type: "text", text: JSON.stringify(body) }], structuredContent: body };
+    },
+  };
+  const rows = await listFindings(host as never, "repo/run-1");
+  assert.equal(rows.length, 1100);
+  assert.deepEqual(calls, [0, 500, 1000]);
 });

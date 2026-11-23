@@ -5,7 +5,7 @@ import { defaultRun, sortFindings } from "../lib/derive";
 import { toConversation } from "../lib/host";
 import { DEFAULT_SETTINGS, parseSettings } from "../lib/settings";
 import type { Session, View } from "./session";
-import { Empty, ErrorNote, Toast, useToast } from "./common";
+import { Empty, ErrorNote, RequestSheet, Toast, useToast } from "./common";
 import { Icon } from "./icons";
 import { ProgressView } from "./progress";
 import { FindingsView } from "./findings";
@@ -56,6 +56,7 @@ export function WorkspaceApp({ host, context, visible }: { host: PluginHost; con
   const rootRef = useRef<HTMLDivElement | null>(null);
   const wide = useWide(rootRef);
   const [toast, notify] = useToast();
+  const [request, setRequest] = useState<{ text: string; reason: string } | null>(null);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [runs, setRuns] = useState<RunRow[] | null>(null);
   const [loadError, setLoadError] = useState<unknown>(null);
@@ -147,10 +148,9 @@ export function WorkspaceApp({ host, context, visible }: { host: PluginHost; con
 
   const send = useCallback(async (text: string, done?: string) => {
     const result = await toConversation(host, text);
-    if (result === "sent") notify(done ?? "已放进对话输入框");
-    else if (result === "copied") notify("没法直接放进输入框，已复制到剪贴板，粘贴到对话里发送", "ok");
-    else notify("无法复制，请在审计请求里手动选取", "err");
-    return result;
+    if (result.kind === "sent") { notify(done ?? "已放进对话输入框"); return "sent" as const; }
+    setRequest({ text, reason: result.reason });
+    return "manual" as const;
   }, [host, notify]);
 
   const session: Session = {
@@ -227,6 +227,7 @@ export function WorkspaceApp({ host, context, visible }: { host: PluginHost; con
       </header>
       {loadError && runs ? <div class="bar"><ErrorNote message="刷新失败，显示的是上一次的数据" onRetry={() => setTick((t) => t + 1)} /></div> : null}
       <div class="content">{body}</div>
+      {request ? <RequestSheet text={request.text} reason={request.reason} onClose={() => setRequest(null)} /> : null}
       <Toast toast={toast} />
     </div>
   );

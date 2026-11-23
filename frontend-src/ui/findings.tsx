@@ -4,7 +4,7 @@ import type { FindingRow, Verdict } from "../types";
 import { matchesQuery, priorRunsOf, runNumber, severityRank, sortFindings, unitTotals, VERDICT_LABEL } from "../lib/derive";
 import { findingReference } from "../lib/request";
 import { exportRun } from "../lib/api";
-import { copy } from "../lib/host";
+import { copySync } from "../lib/host";
 import { Empty } from "./common";
 import { FindingRowItem } from "./progress";
 import { Icon } from "./icons";
@@ -66,7 +66,7 @@ export function ExportMenu({ s, runId, inline }: { s: Session; runId: string; in
             <div class="exported">
               <span class="muted small">已导出 {done.records} 条（{done.format}）</span>
               <span class="mono path">{done.path}</span>
-              <button type="button" class="btn sm" onClick={() => void copy(done.path).then((ok) => s.notify(ok ? "路径已复制" : "无法复制路径", ok ? "ok" : "err"))}><Icon name="copy" />复制路径</button>
+              <button type="button" class="btn sm" onClick={() => { const ok = copySync(done.path); s.notify(ok ? "路径已复制" : "无法复制路径", ok ? "ok" : "err"); }}><Icon name="copy" />复制路径</button>
             </div>
           ) : <span class="muted small">只导出已确认的发现。文件写在本机审计数据目录。</span>}
         </div>

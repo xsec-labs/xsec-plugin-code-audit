@@ -1,4 +1,5 @@
-import { render } from "preact";
+import { Component, render } from "preact";
+import type { ComponentChildren } from "preact";
 import { parseContext } from "./context";
 import { themeFacts } from "./lib/host";
 import { SettingsApp, WorkspaceApp } from "./ui/app";
@@ -30,6 +31,22 @@ function themeFromDocument(): Record<string, string> {
   return theme;
 }
 
+/** A record with a missing field must not blank the whole panel: show the failure with a way to try again. */
+class Boundary extends Component<{ children?: ComponentChildren }, { error: Error | null }> {
+  state = { error: null as Error | null };
+  componentDidCatch(error: unknown) { this.setState({ error: error instanceof Error ? error : new Error(String(error)) }); }
+  render() {
+    if (!this.state.error) return this.props.children;
+    return (
+      <div class="ca" style={{ padding: "24px", display: "grid", gap: "10px", justifyItems: "start" }} role="alert">
+        <b>代码审计面板出错了</b>
+        <span class="muted small">{this.state.error.message}</span>
+        <button type="button" class="btn sm" onClick={() => this.setState({ error: null })}>重试</button>
+      </div>
+    );
+  }
+}
+
 type Controller = {
   mount(root: HTMLElement, context: unknown): void;
   update(context: unknown): void;
@@ -46,9 +63,11 @@ export function activate(host: PluginHost): Controller {
   const draw = () => {
     if (!root || !current) return;
     render(
-      current.kind === "settings-page"
-        ? <SettingsApp host={host} />
-        : <WorkspaceApp host={host} context={current} visible={current.visible} />,
+      <Boundary>
+        {current.kind === "settings-page"
+          ? <SettingsApp host={host} />
+          : <WorkspaceApp host={host} context={current} visible={current.visible} />}
+      </Boundary>,
       root,
     );
   };
