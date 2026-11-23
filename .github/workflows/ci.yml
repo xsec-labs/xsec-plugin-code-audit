@@ -1,0 +1,48 @@
+name: ci
+on:
+  push:
+    branches: [main, beta]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  sidecar:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: sidecar
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: sidecar/go.mod
+      - run: test -z "$(gofmt -l .)"
+        shell: bash
+      - run: go vet ./...
+      - run: go test ./...
+      - run: GOOS=windows go vet ./...
+        shell: bash
+      - run: GOOS=darwin go vet ./...
+        shell: bash
+  vendored-skill:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/sync-upstream-skill.sh check
+      # The golden corpus is recorded from the upstream Node validators; re-record and require no change.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: golden corpus is reproducible
+        run: |
+          cp -r testdata/golden /tmp/golden-before
+          node scripts/gen-golden.cjs skills/security-audit
+          for f in findings ledger; do
+            cmp <(zcat /tmp/golden-before/$f.json.gz) <(zcat testdata/golden/$f.json.gz)
+          done
