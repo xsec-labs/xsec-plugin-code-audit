@@ -66,3 +66,34 @@ export async function toConversation(host: PluginHost, text: string): Promise<Se
     return { kind: "manual", reason: METHOD_MISSING.test(message) ? "" : message };
   }
 }
+
+export const DIRECTORY_PICK_METHOD = "xsec.workspace.directory.pick";
+export const PANEL_MAXIMIZE_METHOD = "xsec.workspace.panel.maximize";
+
+/** True when the host answered "that method does not exist" (an older Desktop), not when it refused this call. */
+export function hostLacksMethod(error: unknown): boolean {
+  return METHOD_MISSING.test(error instanceof Error ? error.message : String(error ?? ""));
+}
+
+export type PickResult = { kind: "picked"; path: string } | { kind: "cancelled" } | { kind: "unsupported"; reason: string };
+
+/** Ask Desktop for its "choose a folder" dialog. Cancelling is not an error. */
+export async function pickDirectory(host: PluginHost, title: string): Promise<PickResult> {
+  try {
+    const out = await host.request(DIRECTORY_PICK_METHOD, { title });
+    const path = typeof out === "object" && out !== null && typeof (out as { path?: unknown }).path === "string" ? (out as { path: string }).path : "";
+    return path ? { kind: "picked", path } : { kind: "cancelled" };
+  } catch (error) {
+    return { kind: "unsupported", reason: hostLacksMethod(error) ? "" : error instanceof Error ? error.message : String(error ?? "") };
+  }
+}
+
+/** Fill the content area with the panel (or give it back). Resolves false when the host cannot, with the host's reason. */
+export async function setMaximized(host: PluginHost, maximized: boolean): Promise<{ ok: boolean; reason: string }> {
+  try {
+    await host.request(PANEL_MAXIMIZE_METHOD, { maximized });
+    return { ok: true, reason: "" };
+  } catch (error) {
+    return { ok: false, reason: hostLacksMethod(error) ? "" : error instanceof Error ? error.message : String(error ?? "") };
+  }
+}

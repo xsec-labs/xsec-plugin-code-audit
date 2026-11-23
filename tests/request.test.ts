@@ -36,10 +36,24 @@ test("a finding reference carries the run id and fingerprint", () => {
   assert.match(text, /a\.go:7/);
 });
 
+test("the model and auto-write settings become lines of the request only when set", () => {
+  const plain = startRequest(form, DEFAULT_SETTINGS, false);
+  assert.doesNotMatch(plain, /xsec_finding_upsert/);
+  assert.doesNotMatch(plain, /用模型/);
+  const set = startRequest(form, { ...DEFAULT_SETTINGS, verifierModel: "deepseek-flash", autoWriteVulns: true }, false);
+  assert.match(set, /用模型 "deepseek-flash"/);
+  assert.match(set, /xsec_finding_upsert/);
+  assert.match(set, /vuln_id/);
+});
+
 test("settings parsing clamps numbers and falls back for garbage", () => {
   assert.deepEqual(parseSettings(undefined), DEFAULT_SETTINGS);
   const s = parseSettings({ profile: "deep", budget: 99999, concurrency: 0, excludes: [" a/ ", "", 3], readSecurityMd: false });
-  assert.deepEqual(s, { profile: "deep", budget: 1000, concurrency: 1, excludes: ["a/"], readSecurityMd: false });
+  assert.deepEqual(s, { profile: "deep", budget: 1000, concurrency: 1, excludes: ["a/"], readSecurityMd: false, verifierModel: "", autoWriteVulns: false, retention: 20 });
+  const kept = parseSettings({ verifierModel: "  m\n1 ", autoWriteVulns: true, retention: 0 });
+  assert.deepEqual([kept.verifierModel, kept.autoWriteVulns, kept.retention], ["m 1", true, 0]);
+  assert.equal(parseSettings({ retention: "7" }).retention, 7);
+  assert.equal(parseSettings({ retention: -3 }).retention, 1);
   assert.equal(parseSettings({ profile: "nope" }).profile, "standard");
 });
 

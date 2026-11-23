@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildGrid, elapsedMinutes, formatWhen, phaseStates, sortFindings, unitTotals, defaultRun } from "../frontend-src/lib/derive";
+import { buildGrid, elapsedMinutes, formatWhen, phaseStates, sortFindings, unitTotals, defaultRun, surplusRuns } from "../frontend-src/lib/derive";
 import type { FindingRow, LedgerUnit, RunRow } from "../frontend-src/types";
 
 const unit = (id: string, surface: string, cls: string, status: LedgerUnit["status"], extra: Partial<LedgerUnit> = {}): LedgerUnit => ({
@@ -63,4 +63,15 @@ test("default run is the one in progress, else the newest", () => {
   assert.equal(defaultRun([r("a", "complete"), r("b", "in_progress")])?.run_id, "b");
   assert.equal(defaultRun([r("a", "complete"), r("b", "complete")])?.run_id, "a");
   assert.equal(defaultRun([]), undefined);
+});
+
+test("retention lists the finished runs beyond the newest N, oldest first, and never a running one", () => {
+  const r = (id: string, at: string, status: RunRow["status"]) => ({ run_id: id, created_at: at, status }) as RunRow;
+  const runs = [r("r5", "2026-11-05", "in_progress"), r("r4", "2026-11-04", "complete"), r("r3", "2026-11-03", "incomplete"), r("r2", "2026-11-02", "complete"), r("r1", "2026-11-01", "complete")];
+  assert.deepEqual(surplusRuns(runs, 3).map((x) => x.run_id), ["r1", "r2"]);
+  assert.deepEqual(surplusRuns(runs, 1).map((x) => x.run_id), ["r1", "r2", "r3", "r4"]);
+  assert.deepEqual(surplusRuns(runs, 0), []);
+  assert.deepEqual(surplusRuns(runs, 10), []);
+  // A running run that is old stays, even beyond the kept set.
+  assert.deepEqual(surplusRuns([r("a", "2026-11-03", "complete"), r("b", "2026-11-02", "in_progress"), r("c", "2026-11-01", "complete")], 1).map((x) => x.run_id), ["c"]);
 });

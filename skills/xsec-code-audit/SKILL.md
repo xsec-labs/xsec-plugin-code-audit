@@ -78,7 +78,10 @@ When the user asks to verify a fix, re-read the cited source, then record the re
 `code_audit_finding_state_set` (`fix_status`: `fixed`, `still_present` or `cannot_determine`, with a short `fix_note`).
 Do not edit the target to produce a fix; describe it. The user's own decision (`confirmed_by_user`, `excluded_by_user`)
 and any link to a project vulnerability are theirs: set them only when the user asks, and never auto-link or
-auto-publish a finding.
+auto-publish a finding on your own. The one exception is an audit request that itself says to write the confirmed
+findings into the project's vulnerabilities (the user switched that on in the plugin settings): then, after
+`code_audit_report_build`, call `xsec_finding_upsert` for each `confirmed` finding only, record the returned
+vulnerability id with `code_audit_finding_state_set` (`vuln_id`), and leave `needs_validation` and `rejected` records out.
 
 ## Finishing
 

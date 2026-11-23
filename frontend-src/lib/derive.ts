@@ -133,6 +133,16 @@ export function defaultRun(runs: RunRow[]): RunRow | undefined {
   return runs.find((r) => r.status === "in_progress") ?? runs[0];
 }
 
+/**
+ * Finished runs beyond the newest `keep` (0 keeps all), oldest first. A run still in progress is never listed, and the
+ * newest `keep` are counted among all runs, so a running run does not push a finished one out of the kept set.
+ */
+export function surplusRuns(runs: RunRow[], keep: number): RunRow[] {
+  if (keep <= 0) return [];
+  const newestFirst = [...runs].sort((a, b) => (a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0));
+  return newestFirst.slice(keep).filter((r) => r.status !== "in_progress").reverse();
+}
+
 export function priorRunsOf(runs: RunRow[], repo: string, runId: string): RunRow[] {
   return runs.filter((r) => r.repo === repo && r.run_id !== runId);
 }

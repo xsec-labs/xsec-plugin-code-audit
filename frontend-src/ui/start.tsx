@@ -3,6 +3,7 @@ import type { Session } from "./session";
 import type { Profile, Scope } from "../types";
 import { PROFILES, parsePathList } from "../lib/settings";
 import { FOCUS_AREAS, startRequest, type StartForm } from "../lib/request";
+import { pickDirectory } from "../lib/host";
 import { Segmented, Switch } from "./common";
 import { Icon } from "./icons";
 
@@ -42,6 +43,12 @@ export function StartView({ s, onStarted }: { s: Session; onStarted(): void }) {
     : "";
   const visibleFocus = allFocus ? FOCUS_AREAS : FOCUS_AREAS.slice(0, 5);
 
+  async function choose() {
+    const result = await pickDirectory(s.host, "选择要审计的目录");
+    if (result.kind === "picked") set({ target: result.path });
+    else if (result.kind === "unsupported") s.notify(result.reason ? `不能打开目录选择：${result.reason}` : "这个版本的 Desktop 还不能选择目录，请直接填写路径", "err");
+  }
+
   async function start() {
     const text = startRequest(full, s.settings, hasPrior);
     const result = await s.send(text, "已把审计请求放进对话输入框，发送后 Agent 就会开始");
@@ -53,7 +60,7 @@ export function StartView({ s, onStarted }: { s: Session; onStarted(): void }) {
       <div class="scroll pad form">
         <div class="field">
           <label class="label" for="ca-target">审计目标</label>
-          <div class="inp val"><Icon name="folder" /><input id="ca-target" class="mono" value={form.target} placeholder="留空则审计当前会话的项目目录" onInput={(e) => set({ target: (e.currentTarget as HTMLInputElement).value })} spellcheck={false} /></div>
+          <div class="inp val"><Icon name="folder" /><input id="ca-target" class="mono" value={form.target} placeholder="留空则审计当前会话的项目目录" onInput={(e) => set({ target: (e.currentTarget as HTMLInputElement).value })} spellcheck={false} /><button type="button" class="btn sm ghost" onClick={() => void choose()} disabled={s.readOnly}>选择…</button></div>
           {recent.length > 1 ? (
             <div class="chips tight">{recent.map((t) => <button type="button" key={t} class={`chip${t === form.target ? " on" : ""}`} onClick={() => set({ target: t })}>{t.split(/[\\/]/).filter(Boolean).slice(-2).join("/")}</button>)}</div>
           ) : null}

@@ -12,7 +12,13 @@ export const DEFAULT_SETTINGS: Settings = {
   concurrency: 4,
   excludes: ["node_modules/", "vendor/", "dist/", "**/testdata/"],
   readSecurityMd: true,
+  verifierModel: "",
+  autoWriteVulns: false,
+  retention: 20,
 };
+
+/** Choices shown for the retention setting; 0 keeps everything. */
+export const RETENTION_CHOICES = [10, 20, 50, 0] as const;
 
 function int(value: unknown, fallback: number, min: number, max: number): number {
   const n = typeof value === "number" ? value : typeof value === "string" && value.trim() ? Number(value) : NaN;
@@ -33,6 +39,9 @@ export function parseSettings(value: unknown): Settings {
     concurrency: int(o.concurrency, DEFAULT_SETTINGS.concurrency, 1, 8),
     excludes,
     readSecurityMd: typeof o.readSecurityMd === "boolean" ? o.readSecurityMd : DEFAULT_SETTINGS.readSecurityMd,
+    verifierModel: typeof o.verifierModel === "string" ? o.verifierModel.replace(/[\u0000-\u001f\u007f]+/g, " ").trim().slice(0, 80) : DEFAULT_SETTINGS.verifierModel,
+    autoWriteVulns: typeof o.autoWriteVulns === "boolean" ? o.autoWriteVulns : DEFAULT_SETTINGS.autoWriteVulns,
+    retention: o.retention === 0 ? 0 : int(o.retention, DEFAULT_SETTINGS.retention, 1, 1000),
   };
 }
 
