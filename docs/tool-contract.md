@@ -10,7 +10,7 @@ cuts a plugin call at 20 s). Arguments are strict: an unknown key is an error.
 | Variable | Meaning |
 | --- | --- |
 | `PLUGIN_DATA` | required; data root |
-| `XSEC_PLUGIN_HOST_RPC_ENDPOINT` | loopback host RPC; when set, each call's `_meta["com.xsec.desktop/contextHandle"]` is traded for `{projectId, role}` with method `xsec.code-audit.context` (`params: {tool}`); a host without the method puts everything in project `default`. Unset: project `local`. |
+| `XSEC_PLUGIN_HOST_RPC_ENDPOINT` | loopback host RPC; when set, each call's `_meta["com.xsec.desktop/contextHandle"]` is traded for `{projectId, role}` with method `xsec.code-audit.context` (`params: {tool}`); a host that predates the method (answers "unsupported Host RPC method", "not mounted" or "not implemented") puts everything in project `default` as parent. Any other host error (no assignment or lease, stale project, retired capability, tool outside the allowlist) fails the tool call: the identity is never guessed. Unset: project `local`. The host method only answers calls that carry a valid assignment and lease (same checks as the JWT plugin), so a plugin-panel call needs an open session. |
 
 ## Layout
 

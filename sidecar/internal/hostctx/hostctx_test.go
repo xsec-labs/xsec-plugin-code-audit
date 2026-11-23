@@ -51,3 +51,20 @@ func TestRemoteEndpointRefused(t *testing.T) {
 		t.Fatal("a non-loopback endpoint must be refused")
 	}
 }
+
+func TestFallbackOnlyForAHostWithoutTheMethod(t *testing.T) {
+	for _, msg := range []string{"unsupported Host RPC method: xsec.code-audit.context", "code-audit Host RPC is not mounted",
+		"plugin Host RPC method is not implemented in the Go host yet: xsec.code-audit.context"} {
+		h := serve(t, `{"jsonrpc":"2.0","id":1,"error":{"code":-32000,"message":"`+msg+`"}}`)
+		if id, err := h.Resolve(context.Background(), "handle-1", "t"); err != nil || id.ProjectID != FallbackProject {
+			t.Errorf("%q: %v %v", msg, id, err)
+		}
+	}
+	for _, msg := range []string{"com.xsec.code-audit Host RPC assignment identity missing", "com.xsec.code-audit Host RPC assignment scope is stale",
+		"com.xsec.code-audit Host RPC parent capability is retired"} {
+		h := serve(t, `{"jsonrpc":"2.0","id":1,"error":{"code":-32000,"message":"`+msg+`"}}`)
+		if _, err := h.Resolve(context.Background(), "handle-1", "t"); err == nil {
+			t.Errorf("%q fell back instead of failing closed", msg)
+		}
+	}
+}

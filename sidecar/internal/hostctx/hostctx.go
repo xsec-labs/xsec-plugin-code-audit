@@ -117,7 +117,7 @@ func (h *Host) Resolve(ctx context.Context, handle, tool string) (Identity, erro
 	}
 	if env.Error != nil {
 		// A host that has not learned the code-audit context method yet: keep working, one shared project.
-		if strings.Contains(env.Error.Message, "not implemented") || strings.Contains(env.Error.Message, "unknown method") {
+		if hostLacksMethod(env.Error.Message) {
 			h.warn("host does not implement " + contextMethod + "; using project " + FallbackProject)
 			return Identity{ProjectID: FallbackProject, Role: "parent"}, nil
 		}
@@ -135,4 +135,17 @@ func (h *Host) Resolve(ctx context.Context, handle, tool string) (Identity, erro
 		role = "parent"
 	}
 	return Identity{ProjectID: project, Role: role}, nil
+}
+
+// hostLacksMethod recognises the answers of a Desktop that predates xsec.code-audit.context: the dispatcher of a
+// host without the method family says "unsupported Host RPC method", a router without the mount says "not mounted",
+// and a plugin dispatcher without the entry says "not implemented". Any other error (a refused identity, a retired
+// lease, a stale project) is a real refusal and is returned to the caller: the call fails closed.
+func hostLacksMethod(msg string) bool {
+	for _, s := range []string{"not implemented", "unknown method", "unsupported Host RPC method", "Host RPC is not mounted"} {
+		if strings.Contains(msg, s) {
+			return true
+		}
+	}
+	return false
 }

@@ -24,7 +24,7 @@ many calls or how much time a real audit takes (see "Not measured").
    inert too.
 3. **Host context method.** The sidecar groups runs by project. That needs a Desktop method `xsec.code-audit.context`
    (same shape as the JWT and attack-path ones: tool name in, `{projectId, role}` out, plus the router prefix and plugin id
-   wiring). Until it exists the sidecar falls back to one shared project `default`, and works standalone as project
+   wiring). Until it exists (Desktop PR xsec-labs/xSecDesktop#1162) the sidecar falls back to one shared project `default`, and works standalone as project
    `local`. Sub-agent role enforcement (`ParentOnly` tools) also relies on that method's `role`.
 
 ## Not measured
